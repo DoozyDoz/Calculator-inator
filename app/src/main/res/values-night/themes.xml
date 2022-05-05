@@ -1,7 +1,7 @@
 <resources xmlns:tools="http://schemas.android.com/tools">
     <!-- Base application theme. -->
     <style name="Theme.Calculator" parent="Theme.Material3.DayNight.NoActionBar">
-        <item name="colorPrimary">@color/color_dark_primary</item>
+        <item name="colorPrimary">@color/color_dark_secondaryContainer</item> <!--        <item name="colorPrimary">@color/color_dark_primary</item>-->
         <item name="colorOnPrimary">@color/color_dark_onPrimary</item>
         <item name="colorPrimaryContainer">@color/color_dark_primaryContainer</item>
         <item name="colorOnPrimaryContainer">@color/color_dark_onPrimaryContainer</item>
@@ -28,7 +28,7 @@
         <item name="colorSurfaceInverse">@color/color_dark_inverseSurface</item>
         <item name="colorPrimaryInverse">@color/color_dark_primaryInverse</item>
 
-        <item name="android:windowBackground">@color/white</item>
+        <item name="android:windowBackground">@color/color_dark_background</item>
         <item name="android:statusBarColor">@android:color/transparent</item>
         <item name="fontFamily">@font/manrope</item>
     </style>

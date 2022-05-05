@@ -41,7 +41,7 @@
     <color name="color_dark_errorContainer">#930006</color>
     <color name="color_dark_onError">#680003</color>
     <color name="color_dark_onErrorContainer">#FFDAD4</color>
-    <color name="color_dark_background">#1B1B1E</color>
+    <color name="color_dark_background">#1B1B1E</color> <!--   color of typing area-->
     <color name="color_dark_onBackground">#E4E2E6</color>
     <color name="color_dark_surface">#1B1B1E</color>
     <color name="color_dark_onSurface">#E4E2E6</color>
