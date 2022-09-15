@@ -1,4 +1,4 @@
-package com.inator.calculator.viewmodel
+package com.inator.calculator.convert.presentation
 
 import android.app.Application
 import androidx.lifecycle.AndroidViewModel

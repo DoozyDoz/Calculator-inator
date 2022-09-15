@@ -1,4 +1,4 @@
-package com.inator.calculator.fragments
+package com.inator.calculator.convert.presentation
 
 import android.os.Bundle
 import android.text.Editable
@@ -11,7 +11,6 @@ import androidx.fragment.app.Fragment
 import androidx.fragment.app.viewModels
 import com.inator.calculator.R
 import com.inator.calculator.databinding.FragmentConverterBinding
-import com.inator.calculator.viewmodel.ConverterInputViewModel
 
 class ConverterFragment : Fragment(R.layout.fragment_converter) {
     private lateinit var textWatcher1: TextWatcher
