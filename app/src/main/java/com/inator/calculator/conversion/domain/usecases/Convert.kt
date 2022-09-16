@@ -2,26 +2,28 @@ package com.inator.calculator.conversion.domain.usecases
 
 import com.inator.calculator.conversion.domain.model.ConversionParameters
 import com.inator.calculator.conversion.domain.model.ConversionResults
+import com.inator.calculator.repository.ConverterRepository
 import io.reactivex.BackpressureStrategy
 import io.reactivex.Flowable
 import io.reactivex.Observable
 import io.reactivex.subjects.BehaviorSubject
 import java.util.concurrent.TimeUnit
 import javax.inject.Inject
+import io.reactivex.functions.Function5
 
+class Convert @Inject constructor(private val converterRepository: ConverterRepository) {
 
-class Convert @Inject constructor(private val animalRepository: AnimalRepository) {
-
-    private val combiningFunction: Function4<String, String, String, String, ConversionParameters>
-        get() = Function4 { inputOne, inputTwo, unitOne, unitTwo ->
-            ConversionParameters(unitOne, inputOne, unitTwo, inputTwo)
+    private val combiningFunction: Function5<String, String, String, String, String, ConversionParameters>
+        get() = Function5 { inputOne, inputTwo, unitOne, unitTwo, measure ->
+            ConversionParameters(measure, unitOne, inputOne, unitTwo, inputTwo)
         }
 
     operator fun invoke(
         unitOneSubject: BehaviorSubject<String>,
         inputOneSubject: BehaviorSubject<String>,
         unitTwoSubject: BehaviorSubject<String>,
-        inputTwoSubject: BehaviorSubject<String>
+        inputTwoSubject: BehaviorSubject<String>,
+        measureSubject: BehaviorSubject<String>
     ): Flowable<ConversionResults> {
         val inputOne = inputOneSubject
             .debounce(250L, TimeUnit.MILLISECONDS)
@@ -29,17 +31,22 @@ class Convert @Inject constructor(private val animalRepository: AnimalRepository
         val inputTwo = inputTwoSubject
             .debounce(250L, TimeUnit.MILLISECONDS)
 
-        val unitOne = unitOneSubject.replaceUIEmptyValue()
-        val unitTwo = unitTwoSubject.replaceUIEmptyValue()
+        val unitOne = unitOneSubject
+        val unitTwo = unitTwoSubject
+        val measure = measureSubject
 
-        return Observable.combineLatest(inputOne, inputTwo, unitOne, unitTwo, combiningFunction)
+        return Observable.combineLatest(
+            inputOne,
+            inputTwo,
+            unitOne,
+            unitTwo,
+            measure,
+            combiningFunction
+        )
             .toFlowable(BackpressureStrategy.LATEST)
             .switchMap { parameters: ConversionParameters ->
-                animalRepository.searchCachedAnimalsBy(parameters)
+                converterRepository.convertUsing(parameters)
             }
     }
 
-    private fun BehaviorSubject<String>.replaceUIEmptyValue() = map {
-        if (it == GetSearchFilters.NO_FILTER_SELECTED) "" else it
-    }
 }
