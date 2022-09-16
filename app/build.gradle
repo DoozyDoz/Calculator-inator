@@ -1,6 +1,7 @@
 apply plugin: 'com.android.application'
 apply plugin: 'kotlin-android'
 apply plugin: 'kotlin-kapt'
+apply plugin: 'dagger.hilt.android.plugin'
 
 android {
     compileSdkVersion 32
@@ -15,8 +16,8 @@ android {
 
     signingConfigs {
         debug {
-                // Nothing here
-            }
+            // Nothing here
+        }
 
         release {
             if (rootProject.file("secure.properties").exists()) {
@@ -98,4 +99,16 @@ dependencies {
 
     // MxParser
     implementation 'org.mariuszgromada.math:MathParser.org-mXparser:5.0.6'
+
+    // DI
+    implementation "com.google.dagger:hilt-android:$hilt_version"
+    kapt "com.google.dagger:hilt-android-compiler:$hilt_version"
+
+    androidTestImplementation "com.google.dagger:hilt-android-testing:$hilt_version"
+    kaptAndroidTest "com.google.dagger:hilt-android-compiler:$hilt_version"
+
+    // Concurrency
+    implementation "io.reactivex.rxjava2:rxjava:$rxjava_version"
+    implementation "io.reactivex.rxjava2:rxkotlin:$rxkotlin_version"
+    implementation "io.reactivex.rxjava2:rxandroid:$rxandroid_version"
 }

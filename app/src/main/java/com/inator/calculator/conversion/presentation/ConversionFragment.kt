@@ -1,28 +1,46 @@
-package com.inator.calculator.convert.presentation
+package com.inator.calculator.conversion.presentation
 
 import android.os.Bundle
 import android.text.Editable
 import android.text.TextWatcher
+import android.view.LayoutInflater
 import android.view.View
+import android.view.ViewGroup
 import android.widget.AdapterView
 import android.widget.AdapterView.OnItemSelectedListener
 import android.widget.ArrayAdapter
+import android.widget.Spinner
+import android.widget.SpinnerAdapter
 import androidx.fragment.app.Fragment
 import androidx.fragment.app.viewModels
+import androidx.lifecycle.Lifecycle
+import androidx.lifecycle.lifecycleScope
+import androidx.lifecycle.repeatOnLifecycle
 import com.inator.calculator.R
 import com.inator.calculator.databinding.FragmentConverterBinding
+import dagger.hilt.android.AndroidEntryPoint
+import kotlinx.coroutines.launch
 
-class ConverterFragment : Fragment(R.layout.fragment_converter) {
+@AndroidEntryPoint
+class ConversionFragment : Fragment(R.layout.fragment_converter) {
     private lateinit var textWatcher1: TextWatcher
     private lateinit var textWatcher2: TextWatcher
-    private val converterInputViewModel: ConverterInputViewModel by viewModels()
+    private val converterInputViewModel: ConversionFragmentViewModel by viewModels()
     private var hasSetSavedSpinners = false
 
     private var _binding: FragmentConverterBinding? = null
     private val binding get() = _binding!!
 
+    override fun onCreateView(
+        inflater: LayoutInflater,
+        container: ViewGroup?,
+        savedInstanceState: Bundle?
+    ): View {
+        _binding = FragmentConverterBinding.inflate(inflater, container, false)
+        return binding.root
+    }
+
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
-        _binding = FragmentConverterBinding.bind(view)
         setUpViews()
     }
 
@@ -30,36 +48,35 @@ class ConverterFragment : Fragment(R.layout.fragment_converter) {
         binding.chipGroup.setOnCheckedStateChangeListener { _, checkedIds ->
             when (checkedIds[0]) {
                 R.id.length -> {
-                    converterInputViewModel.setMeasure("Length")
+                    converterInputViewModel.onEvent(ConversionEvent.SetMeasure("Length"))
                 }
                 R.id.mass -> {
-                    converterInputViewModel.setMeasure("Mass")
+                    converterInputViewModel.onEvent(ConversionEvent.SetMeasure("Mass"))
                 }
                 R.id.area -> {
-                    converterInputViewModel.setMeasure("Area")
+                    converterInputViewModel.onEvent(ConversionEvent.SetMeasure("Area"))
                 }
                 R.id.speed -> {
-                    converterInputViewModel.setMeasure("Speed")
+                    converterInputViewModel.onEvent(ConversionEvent.SetMeasure("Speed"))
                 }
                 R.id.angle -> {
-                    converterInputViewModel.setMeasure("Angle")
+                    converterInputViewModel.onEvent(ConversionEvent.SetMeasure("Angle"))
                 }
                 R.id.data -> {
-                    converterInputViewModel.setMeasure("Data")
+                    converterInputViewModel.onEvent(ConversionEvent.SetMeasure("Data"))
                 }
                 R.id.time -> {
-                    converterInputViewModel.setMeasure("Time")
+                    converterInputViewModel.onEvent(ConversionEvent.SetMeasure("Time"))
                 }
                 R.id.volume -> {
-                    converterInputViewModel.setMeasure("Volume")
+                    converterInputViewModel.onEvent(ConversionEvent.SetMeasure("Volume"))
                 }
                 R.id.temperature -> {
-                    converterInputViewModel.setMeasure("Temperature")
+                    converterInputViewModel.onEvent(ConversionEvent.SetMeasure("Temperature"))
                 }
             }
             converterInputViewModel.clearSavedSpinners()
         }
-        binding.chipGroup.check(converterInputViewModel.getSavedMeasure())
         textWatcher1 = object : TextWatcher {
             override fun beforeTextChanged(s: CharSequence, start: Int, count: Int, after: Int) {}
             override fun onTextChanged(s: CharSequence, start: Int, before: Int, count: Int) {}
@@ -76,31 +93,6 @@ class ConverterFragment : Fragment(R.layout.fragment_converter) {
         }
         binding.editText1.addTextChangedListener(textWatcher1)
         binding.editText2.addTextChangedListener(textWatcher2)
-        binding.unit1.onItemSelectedListener = object : OnItemSelectedListener {
-            override fun onItemSelected(
-                parent: AdapterView<*>?,
-                view: View?,
-                position: Int,
-                id: Long
-            ) {
-                converterInputViewModel.setSpinner1(position)
-            }
-
-            override fun onNothingSelected(parent: AdapterView<*>?) {}
-
-        }
-        binding.unit2.onItemSelectedListener = object : OnItemSelectedListener {
-            override fun onItemSelected(
-                parent: AdapterView<*>?,
-                view: View?,
-                position: Int,
-                id: Long
-            ) {
-                converterInputViewModel.setSpinner2(position)
-            }
-
-            override fun onNothingSelected(parent: AdapterView<*>?) {}
-        }
 
         converterInputViewModel.getOutputDirect().observe(viewLifecycleOwner) {
             binding.editText2.apply {
@@ -121,8 +113,76 @@ class ConverterFragment : Fragment(R.layout.fragment_converter) {
         ) {
             setUpSpinnerAdapter(it)
         }
+        setUnitListeners()
+        subscribeToViewStateUpdates()
     }
 
+    private fun subscribeToViewStateUpdates() {
+        viewLifecycleOwner.lifecycleScope.launch {
+            viewLifecycleOwner.repeatOnLifecycle(Lifecycle.State.STARTED) {
+                converterInputViewModel.state.collect {
+                    updateScreenState(it)
+                }
+            }
+        }
+    }
+
+    private fun updateScreenState(newState: ConversionViewState) {
+        binding.chipGroup.check(newState.currentMeasure)
+        with(newState){
+            setupUnitValues(binding.unit1, unitValues.getContentIfNotHandled())
+            setupUnitValues(binding.unit2, unitValues.getContentIfNotHandled())
+        }
+
+
+        updateInitialStateViews(inInitialState)
+        searchAdapter.submitList(searchResults)
+
+
+        updateRemoteSearchViews(searchingRemotely)
+        updateNoResultsViews(noResultsState)
+        handleFailures(failure)
+    }
+
+    private fun setupUnitValues(spinner: Spinner, unitValues: List<String>?) {
+        if (unitValues == null || unitValues.isEmpty()) return
+
+        spinner.adapter = createUnitAdapter(filterValues)
+        filter.setText(GetSearchFilters.NO_FILTER_SELECTED, false)
+    }
+
+    private fun createUnitAdapter(adapterValues: List<String>): ArrayAdapter<String> {
+            return ArrayAdapter(requireContext(), android.R.layout.simple_spinner_dropdown_item, adapterValues)
+    }
+
+    private fun setUnitListeners() {
+        with(binding) {
+            setupUnitListenerFor(unit1) { item ->
+                converterInputViewModel.onEvent(ConversionEvent.UnitOneSelected(item))
+            }
+
+            setupUnitListenerFor(unit2) { item ->
+                converterInputViewModel.onEvent(ConversionEvent.UnitTwoSelected(item))
+            }
+        }
+    }
+
+    private fun setupUnitListenerFor(unit: Spinner, block: (item: String) -> Unit) {
+        unit.onItemSelectedListener = object : OnItemSelectedListener {
+            override fun onItemSelected(
+                parent: AdapterView<*>?,
+                view: View?,
+                position: Int,
+                id: Long
+            ) {
+                parent?.let {
+                    block(it.adapter.getItem(position) as String)
+                }
+            }
+
+            override fun onNothingSelected(parent: AdapterView<*>?) {}
+        }
+    }
 
     private fun setUpSpinnerAdapter(string: String) {
 
@@ -138,6 +198,7 @@ class ConverterFragment : Fragment(R.layout.fragment_converter) {
             "Angle" -> R.array.angle_units
             else -> R.array.length_units
         }
+
         ArrayAdapter.createFromResource(
             requireContext(),
             unitArray,

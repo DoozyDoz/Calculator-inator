@@ -18,7 +18,7 @@ import com.inator.calculator.databinding.ActivityMainBinding
 import com.inator.calculator.extensions.isLandscape
 import com.inator.calculator.extensions.smallestScreenWidthDp
 import com.inator.calculator.fragments.CalculatorFragment
-import com.inator.calculator.convert.presentation.ConverterFragment
+import com.inator.calculator.conversion.presentation.ConversionFragment
 import com.inator.calculator.fragments.CurrencyFragment
 import com.inator.calculator.viewmodel.HistoryViewModel
 
@@ -44,7 +44,7 @@ class MainActivity : AppCompatActivity() {
         val pagerAdapter = ViewPagerAdapter(this)
         pagerAdapter.apply {
             addFragment(CalculatorFragment())
-            addFragment(ConverterFragment())
+            addFragment(ConversionFragment())
             addFragment(CurrencyFragment())
         }
         binding.pager.apply {
