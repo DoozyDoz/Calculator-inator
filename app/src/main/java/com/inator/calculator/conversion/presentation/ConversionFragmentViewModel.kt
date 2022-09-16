@@ -2,20 +2,20 @@ package com.inator.calculator.conversion.presentation
 
 import android.app.Application
 import android.util.Log.d
-import android.view.SearchEvent
 import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.LiveData
 import androidx.lifecycle.MutableLiveData
 import androidx.lifecycle.viewModelScope
 import com.inator.calculator.R
 import com.inator.calculator.common.data.preferences.Preferences
+import com.inator.calculator.conversion.domain.model.ConversionResults
 import com.inator.calculator.conversion.domain.usecases.Convert
-import com.inator.calculator.conversion.domain.usecases.SearchAnimals
 import com.inator.calculator.extensions.createExceptionHandler
 import com.inator.calculator.repository.ConverterRepository
 import com.inator.calculator.repository.PreferenceRepository
 import dagger.hilt.android.lifecycle.HiltViewModel
 import io.reactivex.android.schedulers.AndroidSchedulers
+import io.reactivex.disposables.CompositeDisposable
 import io.reactivex.rxkotlin.addTo
 import io.reactivex.subjects.BehaviorSubject
 import kotlinx.coroutines.CoroutineExceptionHandler
@@ -32,7 +32,8 @@ class ConversionFragmentViewModel(
     application: Application,
     private val preferences: Preferences,
     private val convert: Convert,
-    ) : AndroidViewModel(application) {
+    private val compositeDisposable: CompositeDisposable
+) : AndroidViewModel(application) {
 
     private val _state = MutableStateFlow(ConversionViewState())
     private val unitOneSubject = BehaviorSubject.create<String>()
@@ -57,13 +58,21 @@ class ConversionFragmentViewModel(
     }
 
     private fun setupConversionSubscription() {
-        searchAnimals(querySubject, ageSubject, typeSubject)
+        convert(unitOneSubject, inputOneSubject, unitTwoSubject, inputTwoSubject)
             .observeOn(AndroidSchedulers.mainThread())
-            .subscribe(
-                { onSearchResults(it) },
-                { onFailure(it) }
-            )
+            .subscribe { onConversionResults(it) }
             .addTo(compositeDisposable)
+    }
+
+    private fun onConversionResults(conversionResults: ConversionResults) {
+        val (inputOneResult, inputTwoResult) = conversionResults
+        onConverted(inputOneResult, inputTwoResult)
+    }
+
+    private fun onConverted(inputOneResult: String, inputTwoResult: String) {
+        _state.update { oldState ->
+            oldState.copy(input1 = inputOneResult, input2 = inputTwoResult)
+        }
     }
 
     private fun loadMeasure() {
@@ -251,5 +260,10 @@ class ConversionFragmentViewModel(
 
     fun clearSavedSpinners() {
         preferenceRepository.clearSpinnerSelections()
+    }
+
+    override fun onCleared() {
+        super.onCleared()
+        compositeDisposable.clear()
     }
 }

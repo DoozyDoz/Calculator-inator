@@ -10,7 +10,6 @@ import android.widget.AdapterView
 import android.widget.AdapterView.OnItemSelectedListener
 import android.widget.ArrayAdapter
 import android.widget.Spinner
-import android.widget.SpinnerAdapter
 import androidx.fragment.app.Fragment
 import androidx.fragment.app.viewModels
 import androidx.lifecycle.Lifecycle
@@ -93,7 +92,6 @@ class ConversionFragment : Fragment(R.layout.fragment_converter) {
         }
         binding.editText1.addTextChangedListener(textWatcher1)
         binding.editText2.addTextChangedListener(textWatcher2)
-
         converterInputViewModel.getOutputDirect().observe(viewLifecycleOwner) {
             binding.editText2.apply {
                 removeTextChangedListener(textWatcher2)
@@ -113,6 +111,8 @@ class ConversionFragment : Fragment(R.layout.fragment_converter) {
         ) {
             setUpSpinnerAdapter(it)
         }
+
+
         setUnitListeners()
         subscribeToViewStateUpdates()
     }
@@ -128,31 +128,37 @@ class ConversionFragment : Fragment(R.layout.fragment_converter) {
     }
 
     private fun updateScreenState(newState: ConversionViewState) {
-        binding.chipGroup.check(newState.currentMeasure)
-        with(newState){
-            setupUnitValues(binding.unit1, unitValues.getContentIfNotHandled())
-            setupUnitValues(binding.unit2, unitValues.getContentIfNotHandled())
+        with(newState) {
+            binding.chipGroup.check(currentMeasure)
+            setupUnitValues(binding.unit1, unitValues.getContentIfNotHandled(), unit1)
+            setupUnitValues(binding.unit2, unitValues.getContentIfNotHandled(), unit2)
+            updateInputs(input1, input2)
         }
-
-
-        updateInitialStateViews(inInitialState)
-        searchAdapter.submitList(searchResults)
-
-
-        updateRemoteSearchViews(searchingRemotely)
-        updateNoResultsViews(noResultsState)
-        handleFailures(failure)
+//        handleFailures(failure)
     }
 
-    private fun setupUnitValues(spinner: Spinner, unitValues: List<String>?) {
+    private fun updateInputs(input1: String, input2: String) {
+        with(binding) {
+            editText1.setText(input1)
+            editText2.setText(input2)
+        }
+    }
+
+    private fun setupUnitValues(spinner: Spinner, unitValues: List<String>?, unit: Int) {
         if (unitValues == null || unitValues.isEmpty()) return
 
-        spinner.adapter = createUnitAdapter(filterValues)
-        filter.setText(GetSearchFilters.NO_FILTER_SELECTED, false)
+        spinner.adapter = createUnitAdapter(unitValues)
+        spinner.setSelection(unit)
     }
 
     private fun createUnitAdapter(adapterValues: List<String>): ArrayAdapter<String> {
-            return ArrayAdapter(requireContext(), android.R.layout.simple_spinner_dropdown_item, adapterValues)
+        return ArrayAdapter(
+            requireContext(),
+            android.R.layout.simple_spinner_item,
+            adapterValues
+        ).also { unitAdapter ->
+            unitAdapter.setDropDownViewResource(android.R.layout.simple_spinner_dropdown_item)
+        }
     }
 
     private fun setUnitListeners() {

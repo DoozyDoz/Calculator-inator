@@ -1,6 +1,7 @@
 package com.inator.calculator.conversion.domain.usecases
 
-import android.app.appsearch.SearchResults
+import com.inator.calculator.conversion.domain.model.ConversionParameters
+import com.inator.calculator.conversion.domain.model.ConversionResults
 import io.reactivex.BackpressureStrategy
 import io.reactivex.Flowable
 import io.reactivex.Observable
@@ -11,9 +12,9 @@ import javax.inject.Inject
 
 class Convert @Inject constructor(private val animalRepository: AnimalRepository) {
 
-    private val combiningFunction: io.reactivex.functions.Function3<String, String, String, SearchParameters>
-        get() = Function3 { query, age, type ->
-            SearchParameters(query, age, type)
+    private val combiningFunction: Function4<String, String, String, String, ConversionParameters>
+        get() = Function4 { inputOne, inputTwo, unitOne, unitTwo ->
+            ConversionParameters(unitOne, inputOne, unitTwo, inputTwo)
         }
 
     operator fun invoke(
@@ -21,7 +22,7 @@ class Convert @Inject constructor(private val animalRepository: AnimalRepository
         inputOneSubject: BehaviorSubject<String>,
         unitTwoSubject: BehaviorSubject<String>,
         inputTwoSubject: BehaviorSubject<String>
-    ): Flowable<SearchResults> {
+    ): Flowable<ConversionResults> {
         val inputOne = inputOneSubject
             .debounce(250L, TimeUnit.MILLISECONDS)
 
@@ -31,9 +32,9 @@ class Convert @Inject constructor(private val animalRepository: AnimalRepository
         val unitOne = unitOneSubject.replaceUIEmptyValue()
         val unitTwo = unitTwoSubject.replaceUIEmptyValue()
 
-        return Observable.combineLatest(query, age, type, combiningFunction)
+        return Observable.combineLatest(inputOne, inputTwo, unitOne, unitTwo, combiningFunction)
             .toFlowable(BackpressureStrategy.LATEST)
-            .switchMap { parameters: SearchParameters ->
+            .switchMap { parameters: ConversionParameters ->
                 animalRepository.searchCachedAnimalsBy(parameters)
             }
     }
